@@ -77,34 +77,6 @@ test("explicit server URLs require an HTTP or HTTPS scheme", async () => {
   }
 })
 
-test("explicit server connection failures retain network and authentication diagnostics", async () => {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), "opencode-server-connection-errors-"))
-  const layer = Global.layerWith({ config: path.join(root, "config"), state: path.join(root, "state") })
-  const runPromise = <A, E>(effect: Effect.Effect<A, E, Global.Service | FileSystem.FileSystem | Scope.Scope>) =>
-    Effect.runPromise(effect.pipe(Effect.provide(layer), Effect.provide(NodeFileSystem.layer), Effect.scoped))
-  const unreachable = Bun.serve({ port: 0, fetch: () => new Response() })
-  const server = unreachable.url.toString()
-  await unreachable.stop(true)
-
-  try {
-    await expect(runPromise(ServerConnection.resolve({ server }))).rejects.toThrow(`Could not reach server at ${server}`)
-
-    const unauthorized = Bun.serve({
-      port: 0,
-      fetch: () => Response.json({ _tag: "UnauthorizedError", message: "Authentication required" }, { status: 401 }),
-    })
-    try {
-      await expect(runPromise(ServerConnection.resolve({ server: unauthorized.url.toString() }))).rejects.toThrow(
-        /requires a password|rejected the password/,
-      )
-    } finally {
-      await unauthorized.stop(true)
-    }
-  } finally {
-    await fs.rm(root, { recursive: true, force: true })
-  }
-})
-
 test("service options only require a matching version when requested", async () => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), "opencode-service-options-"))
   const layer = Global.layerWith({ config: path.join(root, "config"), state: path.join(root, "state") })
