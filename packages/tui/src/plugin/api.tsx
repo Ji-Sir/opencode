@@ -107,6 +107,9 @@ export function createPluginContext(input: {
   const dialogApi = createDialogApi(host.dialog, provide)
   const toastApi: Toast = {
     show(options) {
+      if (options.variant !== undefined && !["info", "success", "warning", "error"].includes(options.variant)) {
+        throw new Error(`Invalid toast variant ${String(options.variant)}. Expected info, success, warning, or error.`)
+      }
       const toast = {
         title: options.title,
         message: options.message,

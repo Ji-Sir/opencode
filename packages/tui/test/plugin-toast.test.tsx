@@ -50,6 +50,20 @@ test.each([
   expect(harness.shown).toEqual([{ title: undefined, message: "done", variant: "info", duration: undefined }])
 })
 
+test.each(["info", "success", "warning", "error"] as const)("toast accepts the %s variant", (variant) => {
+  const harness = setup({ type: "home" })
+  harness.toast.show({ message: "done", variant })
+  expect(harness.shown).toEqual([{ title: undefined, message: "done", variant, duration: undefined }])
+})
+
+test.each(["warn", "", 42, null])("toast rejects invalid runtime variant %j before showing", (variant) => {
+  const harness = setup({ type: "home" })
+  // SAFETY: Exercise untyped JavaScript plugin input at the runtime boundary.
+  const options = { message: "done", variant } as unknown as Parameters<typeof harness.toast.show>[0]
+  expect(() => harness.toast.show(options)).toThrow(/Invalid toast variant/)
+  expect(harness.shown).toEqual([])
+})
+
 test.each<Route>([{ type: "home" }, { type: "session", sessionID: "parent" }])(
   "toast for a session that is not open gains its title and an Open action (%j)",
   (route) => {
